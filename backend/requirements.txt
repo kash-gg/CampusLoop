@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+asyncpg
+python-dotenv
+supabase
+sentence-transformers
+apscheduler
+cloudinary
+pydantic
+pydantic-settings
