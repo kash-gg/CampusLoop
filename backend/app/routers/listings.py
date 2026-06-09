@@ -1,14 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from typing import List
 from app.models.listing import ListingCreate, ListingUpdate, ListingResponse
 from app.services.embedding import generate_embedding
+from app.services.want_matcher import match_listing_to_wants
 from app.db.supabase import get_supabase
 from supabase import Client
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
 
 @router.post("", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
-async def create_listing(listing: ListingCreate, supabase: Client = Depends(get_supabase)):
+async def create_listing(
+    listing: ListingCreate, 
+    background_tasks: BackgroundTasks, 
+    supabase: Client = Depends(get_supabase)
+):
     embedding = generate_embedding(listing.title, listing.description, listing.condition)
     
     data = listing.model_dump()
@@ -18,8 +23,11 @@ async def create_listing(listing: ListingCreate, supabase: Client = Depends(get_
     
     if not response.data:
         raise HTTPException(status_code=400, detail="Failed to create listing")
+        
+    created_listing = response.data[0]
+    background_tasks.add_task(match_listing_to_wants, created_listing["id"], supabase)
     
-    return response.data[0]
+    return created_listing
 
 @router.get("", response_model=List[ListingResponse])
 async def get_listings(
