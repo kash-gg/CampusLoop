@@ -48,7 +48,7 @@ export default function WantsPage() {
   const loadWants = async (domain: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`http://localhost:8000/api/wants?institution_domain=${domain}`)
+      const res = await fetch(`/api/wants?institution_domain=${domain}`)
       if (!res.ok) throw new Error()
       const data: Want[] = await res.json()
       

@@ -50,7 +50,7 @@ export default function ListingDetailPage() {
 
     const fetchListing = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/listings/${id}`)
+        const res = await fetch(`/api/listings/${id}`)
         if (res.ok) {
           const data = await res.json()
           
@@ -90,15 +90,21 @@ export default function ListingDetailPage() {
     setIsSubmitting(true)
     setErrorMsg(null)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
       const payload = {
         listing_id: id,
         buyer_id: currentUserId,
         seller_id: listing.seller_id
       }
       
-      const res = await fetch("http://localhost:8000/api/transactions", {
+      const headers: HeadersInit = { "Content-Type": "application/json" }
+      if (token) headers["Authorization"] = `Bearer ${token}`
+
+      const res = await fetch("/api/transactions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload)
       })
 

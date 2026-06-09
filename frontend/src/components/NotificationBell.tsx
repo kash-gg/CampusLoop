@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
@@ -20,42 +20,53 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const channelRef = useRef<any>(null)
   
   const supabase = createClient()
 
   useEffect(() => {
+    let isMounted = true;
+    let channel: any = null;
+
     async function getUser() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setCurrentUserId(user.id)
-        loadNotifications(user.id)
-        
-        // Setup real-time listener for notifications
-        const channel = supabase
-          .channel(`notifications:${user.id}`)
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'notifications',
-              filter: `user_id=eq.${user.id}`
-            },
-            (payload) => {
-              const newNotification = payload.new as Notification
-              setNotifications((prev) => [newNotification, ...prev])
-              setUnreadCount((c) => c + 1)
-            }
-          )
-          .subscribe()
-
-        return () => {
-          supabase.removeChannel(channel)
+      if (!isMounted || !user) return;
+      
+      setCurrentUserId(user.id)
+      loadNotifications(user.id)
+      
+      // Use unique channel name to avoid Strict Mode collisions
+      channel = supabase.channel(`notifications:${user.id}-${Date.now()}`)
+      
+      channel.on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const newNotification = payload.new as Notification
+          setNotifications((prev) => [newNotification, ...prev])
+          setUnreadCount((c) => c + 1)
         }
+      ).subscribe()
+
+      // If unmounted right after subscribing
+      if (!isMounted) {
+        supabase.removeChannel(channel)
       }
     }
     
     getUser()
+
+    return () => {
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
+    }
   }, [])
 
   const loadNotifications = async (userId: string) => {
@@ -115,7 +126,6 @@ export default function NotificationBell() {
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Bell Icon Trigger */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -153,10 +163,8 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* Popover Dropdown */}
       {isOpen && (
         <>
-          {/* Backdrop to close click outside */}
           <div 
             onClick={() => setIsOpen(false)}
             style={{
@@ -186,7 +194,6 @@ export default function NotificationBell() {
               flexDirection: 'column'
             }}
           >
-            {/* Header */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -211,7 +218,6 @@ export default function NotificationBell() {
               )}
             </div>
 
-            {/* Notification List */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {loading && notifications.length === 0 && (
                 <div style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem', textAlign: 'center', padding: 'var(--space-6)' }}>

@@ -37,6 +37,9 @@ export default function NewWantPage() {
     setErrorMsg(null)
 
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
       const wantPayload = {
         buyer_id: currentUserId,
         title,
@@ -45,9 +48,12 @@ export default function NewWantPage() {
         institution_domain: userDomain
       }
 
-      const res = await fetch('http://localhost:8000/api/wants', {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const res = await fetch('/api/wants', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(wantPayload)
       })
 

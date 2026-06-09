@@ -41,7 +41,7 @@ export default function HomePage() {
         // Fetch Surge Status
         const domain = user.email?.split('@')[1] || ''
         try {
-          const res = await fetch(`http://localhost:8000/api/surge/${domain}`)
+          const res = await fetch(`/api/surge/${domain}`)
           if (res.ok) {
             const data = await res.json()
             setSurgeActive(data.is_surge)

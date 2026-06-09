@@ -60,7 +60,7 @@ function ListingFormContent() {
 
   const checkSurge = async (domain: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/surge/${domain}`)
+      const res = await fetch(`/api/surge/${domain}`)
       if (res.ok) {
         const data = await res.json()
         if (data.is_surge) {
@@ -115,6 +115,9 @@ function ListingFormContent() {
     setErrorMsg(null)
     
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
       const payload = {
         title: formData.title,
         description: formData.description,
@@ -126,9 +129,12 @@ function ListingFormContent() {
         institution_domain: userDomain
       }
 
-      const res = await fetch("http://localhost:8000/api/listings", {
+      const headers: HeadersInit = { "Content-Type": "application/json" }
+      if (token) headers["Authorization"] = `Bearer ${token}`
+
+      const res = await fetch("/api/listings", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       })
 
@@ -147,9 +153,9 @@ function ListingFormContent() {
           seller_id: userId
         }
         
-        const txRes = await fetch("http://localhost:8000/api/transactions", {
+        const txRes = await fetch("/api/transactions", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(txPayload)
         })
         

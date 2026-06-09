@@ -57,7 +57,7 @@ export default function AdminDisputesPage() {
     setLoading(true)
     setErrorMsg(null)
     try {
-      const res = await fetch('http://localhost:8000/api/admin/disputes')
+      const res = await fetch('/api/admin/disputes')
       if (!res.ok) throw new Error('Failed to load disputes')
       const data: Dispute[] = await res.json()
 
@@ -104,7 +104,7 @@ export default function AdminDisputesPage() {
   const handleResolve = async (txId: string, outcome: 'resolved_buyer' | 'resolved_seller') => {
     setIsSubmitting(true)
     try {
-      const res = await fetch(`http://localhost:8000/api/admin/disputes/${txId}/resolve?outcome=${outcome}`, {
+      const res = await fetch(`/api/admin/disputes/${txId}/resolve?outcome=${outcome}`, {
         method: 'POST'
       })
       

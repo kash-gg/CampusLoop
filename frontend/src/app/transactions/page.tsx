@@ -61,7 +61,7 @@ export default function TransactionsPage() {
     setErrorMsg(null)
     try {
       // 1. Fetch raw transaction records from backend
-      const res = await fetch(`http://localhost:8000/api/transactions?user_id=${userId}&mode=${mode}`)
+      const res = await fetch(`/api/transactions?user_id=${userId}&mode=${mode}`)
       if (!res.ok) throw new Error('Failed to fetch transactions')
       const txs: Transaction[] = await res.json()
 
@@ -105,7 +105,7 @@ export default function TransactionsPage() {
     if (!currentUserId) return
     setIsSubmitting(true)
     try {
-      const res = await fetch(`http://localhost:8000/api/transactions/${txId}/${action}`, {
+      const res = await fetch(`/api/transactions/${txId}/${action}`, {
         method: 'PATCH'
       })
       if (!res.ok) throw new Error(`Failed to ${action} transaction`)
@@ -130,7 +130,7 @@ export default function TransactionsPage() {
       let options: RequestInit = { method: 'PATCH' }
 
       if (actionType === 'meetup') {
-        url = `http://localhost:8000/api/transactions/${selectedTxId}/meetup`
+        url = `/api/transactions/${selectedTxId}/meetup`
         options = {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -140,9 +140,9 @@ export default function TransactionsPage() {
           })
         }
       } else if (actionType === 'complete') {
-        url = `http://localhost:8000/api/transactions/${selectedTxId}/complete?condition_rating=${rating}`
+        url = `/api/transactions/${selectedTxId}/complete?condition_rating=${rating}`
       } else if (actionType === 'dispute') {
-        url = `http://localhost:8000/api/transactions/${selectedTxId}/dispute?dispute_reason=${encodeURIComponent(disputeReason)}`
+        url = `/api/transactions/${selectedTxId}/dispute?dispute_reason=${encodeURIComponent(disputeReason)}`
         options = { method: 'POST' }
       }
 

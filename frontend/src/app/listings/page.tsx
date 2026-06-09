@@ -43,10 +43,10 @@ export default function ListingsPage() {
   const fetchListings = async (domain: string, searchQuery = "") => {
     setLoading(true)
     try {
-      let url = `http://localhost:8000/api/listings?institution_domain=${domain}`
+      let url = `/api/listings?institution_domain=${domain}`
       
       if (searchQuery) {
-        url = `http://localhost:8000/api/search?q=${encodeURIComponent(searchQuery)}&institution=${domain}`
+        url = `/api/search?q=${encodeURIComponent(searchQuery)}&institution=${domain}`
       }
       
       const res = await fetch(url)

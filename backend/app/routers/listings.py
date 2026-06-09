@@ -5,20 +5,28 @@ from app.services.embedding import generate_embedding
 from app.services.want_matcher import match_listing_to_wants
 from app.db.supabase import get_supabase
 from supabase import Client
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
 
 @router.post("", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
 async def create_listing(
-    listing: ListingCreate, 
-    background_tasks: BackgroundTasks, 
-    supabase: Client = Depends(get_supabase)
+    listing: ListingCreate,
+    background_tasks: BackgroundTasks,
+    supabase: Client = Depends(get_supabase),
+    current_user: dict = Depends(get_current_user)   # <-- new dependency
 ):
-    embedding = generate_embedding(listing.title, listing.description, listing.condition)
+    # Generate embedding from listing data
+    embedding = generate_embedding(listing.title, listing.description or "", listing.condition)
     
+    # Convert listing to dict and add authenticated user fields
     data = listing.model_dump()
     data["embedding"] = embedding
+    data["seller_id"] = current_user["id"]                      # from JWT
+    data["institution_domain"] = current_user["institution_domain"]  # from JWT
+    data["status"] = "active"   # ensure default status
     
+    # Insert into Supabase
     response = supabase.table("listings").insert(data).execute()
     
     if not response.data:

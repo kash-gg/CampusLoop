@@ -39,7 +39,7 @@ export default function TrustBadge({ userId, initialScore, initialBadge, size = 
     setLoading(true)
     setError(false)
     try {
-      const res = await fetch(`http://localhost:8000/api/trust/${userId}`)
+      const res = await fetch(`/api/trust/${userId}`)
       if (!res.ok) throw new Error()
       const data: TrustResponse = await res.json()
       setBreakdown(data.breakdown)
