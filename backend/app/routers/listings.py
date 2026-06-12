@@ -1,25 +1,41 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from typing import List
 from app.models.listing import ListingCreate, ListingUpdate, ListingResponse
 from app.services.embedding import generate_embedding
+from app.services.want_matcher import match_listing_to_wants
 from app.db.supabase import get_supabase
 from supabase import Client
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
 
 @router.post("", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)
-async def create_listing(listing: ListingCreate, supabase: Client = Depends(get_supabase)):
-    embedding = generate_embedding(listing.title, listing.description, listing.condition)
+async def create_listing(
+    listing: ListingCreate,
+    background_tasks: BackgroundTasks,
+    supabase: Client = Depends(get_supabase),
+    current_user: dict = Depends(get_current_user)   # <-- new dependency
+):
+    # Generate embedding from listing data
+    embedding = generate_embedding(listing.title, listing.description or "", listing.condition)
     
+    # Convert listing to dict and add authenticated user fields
     data = listing.model_dump()
     data["embedding"] = embedding
+    data["seller_id"] = current_user["id"]                      # from JWT
+    data["institution_domain"] = current_user["institution_domain"]  # from JWT
+    data["status"] = "active"   # ensure default status
     
+    # Insert into Supabase
     response = supabase.table("listings").insert(data).execute()
     
     if not response.data:
         raise HTTPException(status_code=400, detail="Failed to create listing")
+        
+    created_listing = response.data[0]
+    background_tasks.add_task(match_listing_to_wants, created_listing["id"], supabase)
     
-    return response.data[0]
+    return created_listing
 
 @router.get("", response_model=List[ListingResponse])
 async def get_listings(

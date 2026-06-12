@@ -3,14 +3,12 @@ from typing import List, Optional
 from datetime import datetime
 
 class ListingCreate(BaseModel):
-    seller_id: str
     title: str = Field(..., min_length=3)
     description: Optional[str] = None
     condition: str = Field(..., description="Like New, Good, Fair, For Parts")
     price: float = Field(..., ge=0)
     category: Optional[str] = None
-    image_urls: List[str] = []
-    institution_domain: str
+    image_urls: List[str] = []   # or change to image_url: Optional[str] if single image
 
 class ListingUpdate(BaseModel):
     title: Optional[str] = None
